@@ -1,0 +1,106 @@
+import type { AedRecord } from "../domain/types";
+
+const headers = [
+  "aed_id",
+  "nazwa",
+  "external_reference",
+  "operator",
+  "latitude",
+  "longitude",
+  "coordinate_accuracy_m",
+  "country_code",
+  "voivodeship",
+  "county",
+  "municipality",
+  "locality",
+  "postal_code",
+  "teryt_terc",
+  "teryt_simc",
+  "adres",
+  "opis lokalizacji",
+  "indoor",
+  "floor",
+  "entrance_description",
+  "timezone",
+  "typ dostępu",
+  "access_notes",
+  "godziny dostępu (wartość źródłowa)",
+  "dostępność według harmonogramu",
+  "availability_evaluated_at",
+  "zgłoszony stan urządzenia",
+  "operational_status_observed_at",
+  "data ostatniej weryfikacji",
+  "metoda weryfikacji",
+  "verification_actor_type",
+  "verification_scope",
+  "next_verification_due_at",
+  "record_status",
+  "źródła",
+  "identyfikatory źródłowe",
+  "source_data_dates",
+  "source_urls",
+  "upstream_origins",
+  "fetched_at",
+  "source_updated_at",
+  "licencje",
+  "attributions",
+].join(",");
+
+function safeCell(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number") return String(value);
+  let text = String(value);
+  if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
+  if (/[",\r\n]/.test(text)) text = `"${text.replace(/"/g, '""')}"`;
+  return text;
+}
+
+export function serializeAedCsv(records: AedRecord[]): string {
+  const rows = records.map((record) => [
+    record.id,
+    record.name,
+    record.externalReference,
+    record.operatorName,
+    record.location.latitude,
+    record.location.longitude,
+    record.coordinateAccuracyMeters,
+    record.geography?.countryCode,
+    record.geography?.voivodeship,
+    record.geography?.county,
+    record.geography?.municipality,
+    record.geography?.locality,
+    record.geography?.postalCode,
+    record.geography?.terytTerc,
+    record.geography?.terytSimc,
+    record.address,
+    record.locationDescription,
+    record.placement?.indoor,
+    record.placement?.floor,
+    record.placement?.entranceDescription,
+    record.timezone,
+    record.accessType,
+    record.accessNotes,
+    record.availability.rawHours,
+    record.availability.state,
+    record.availability.evaluatedAt,
+    record.operationalStatus,
+    record.operationalStatusObservedAt,
+    record.lastVerifiedAt,
+    record.verificationMethod,
+    record.verificationActorType,
+    record.verificationScope,
+    record.nextVerificationDueAt,
+    record.recordStatus,
+    record.sources.map((source) => source.sourceId).join(" | "),
+    record.sources.map((source) => source.sourceRecordId).join(" | "),
+    record.sources.map((source) => source.sourceDataDate ?? "unknown").join(" | "),
+    record.sources.map((source) => source.sourceUrl ?? "").join(" | "),
+    record.sources.map((source) => source.upstreamOrigin ?? "").join(" | "),
+    record.sources.map((source) => source.fetchedAt).join(" | "),
+    record.sources.map((source) => source.sourceUpdatedAt ?? "").join(" | "),
+    record.sources.map((source) => source.licenseId ?? "unknown").join(" | "),
+    record.sources.map((source) => source.attribution ?? "").join(" | "),
+  ].map(safeCell).join(","));
+
+  return `\uFEFF${headers}\r\n${rows.join("\r\n")}${rows.length > 0 ? "\r\n" : ""}`;
+}
