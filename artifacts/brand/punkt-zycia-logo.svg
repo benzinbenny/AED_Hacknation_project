@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="180" viewBox="0 0 720 180" role="img" aria-labelledby="title desc">
+  <title id="title">Punkt Życia</title>
+  <desc id="desc">Zielony znak z żółtym sercem i symbolem pomocy, obok nazwa Punkt Życia i podpis Otwarte dane o AED.</desc>
+  <g transform="translate(22 22) scale(1.42)">
+    <rect width="96" height="96" rx="29" fill="#075d58"/>
+    <circle cx="49" cy="49" r="25" fill="none" stroke="#f9f7f1" stroke-width="3"/>
+    <path d="M49 72 25 49c-12-12 6-30 18-18l6 6 6-6c12-12 30 6 18 18L49 72Z" fill="#f4c84e"/>
+    <path d="M49 31v36M31 49h36" stroke="#075d58" stroke-linecap="round" stroke-width="8"/>
+  </g>
+  <text x="190" y="99" fill="#153a3a" font-family="Manrope, Segoe UI, Arial, sans-serif" font-size="57" font-weight="800" letter-spacing="-2">Punkt Życia</text>
+  <text x="194" y="137" fill="#637777" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="19" font-weight="600" letter-spacing="2.4">OTWARTE DANE O AED</text>
+</svg>
