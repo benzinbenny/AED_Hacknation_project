@@ -34,32 +34,8 @@ LABEL = ParagraphStyle("Label", fontName="BrandArial-Bold", fontSize=8, leading=
 
 
 def draw_mark(c, x, y, size):
-    """Draw the app's vector symbol using the same geometry as its source SVG."""
-    scale = size / 96
-    c.saveState()
-    c.translate(x, y)
-    c.scale(scale, scale)
-    c.setFillColor(TEAL)
-    c.roundRect(0, 0, 96, 96, 29, fill=1, stroke=0)
-    c.setStrokeColor(PAPER)
-    c.setLineWidth(3)
-    c.circle(49, 47, 25, fill=0, stroke=1)
-    path = c.beginPath()
-    path.moveTo(49, 24)
-    path.lineTo(25, 47)
-    path.curveTo(13, 59, 31, 77, 43, 65)
-    path.lineTo(49, 59)
-    path.lineTo(55, 65)
-    path.curveTo(67, 77, 85, 59, 73, 47)
-    path.close()
-    c.setFillColor(YELLOW)
-    c.drawPath(path, fill=1, stroke=0)
-    c.setStrokeColor(TEAL)
-    c.setLineWidth(8)
-    c.setLineCap(1)
-    c.line(49, 65, 49, 29)
-    c.line(31, 47, 67, 47)
-    c.restoreState()
+    """Place the logo supplied for the application without altering its artwork."""
+    c.drawImage(str(OUT / "punkt-zycia-logo.png"), x, y, size, size, preserveAspectRatio=True, anchor="c")
 
 
 def draw_lockup(c, x, y, mark_size=88, title_size=25, subtitle_size=9):
@@ -335,4 +311,4 @@ draw_colors_page(brandbook)
 draw_layout_page(brandbook)
 draw_voice_page(brandbook)
 brandbook.save()
-print("Created vector logo PDF and 5-page brandbook PDF")
+print("Created logo PDF and 5-page brandbook PDF")

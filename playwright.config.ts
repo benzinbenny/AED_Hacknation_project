@@ -1,7 +1,8 @@
 import { defineConfig } from "@playwright/test";
 import path from "node:path";
+import { testRunDirectory } from "./e2e/run-directory";
 
-const e2eDataRoot = path.resolve(process.cwd(), `.data-e2e-${process.pid}-${Date.now()}`);
+const e2eDataRoot = testRunDirectory("e2e");
 const e2ePort = 31_111;
 const e2eBaseUrl = `http://127.0.0.1:${e2ePort}`;
 process.env.AED_STORE_PATH = path.join(e2eDataRoot, "aed-store.json");
@@ -25,10 +26,11 @@ export default defineConfig({
     env: {
       AED_NEXT_DIST_DIR: ".next-e2e-isolated",
       AED_STORE_PATH: process.env.AED_STORE_PATH,
-      AED_MODERATOR_TOKEN: "PRESENTATION-ONLY-LOCAL-TOKEN",
-      AED_DEMO_MODERATOR_TOKEN: "PUNKT-ZYCIA-DEMO",
+      AED_MODERATOR_TOKEN: "",
+      AED_DEMO_MODERATOR_TOKEN: "PRESENTATION-ONLY-LOCAL-TOKEN",
+      AED_ADMIN_TOKEN: "ADMIN-E2E-ONLY",
     },
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

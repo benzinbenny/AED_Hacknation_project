@@ -37,6 +37,12 @@ function agePhrase(days: number): string {
   return `${days} dni temu`;
 }
 
+function ageStatus(ageInDays: number, window: FrequencyWindow): Exclude<SourceFreshnessStatus, "reference" | "not_collected"> {
+  if (ageInDays <= window.freshWithinDays) return "fresh";
+  if (ageInDays <= window.attentionWithinDays) return "attention";
+  return "stale";
+}
+
 export function assessSourceFreshness(
   scope: SourceReferenceScope,
   lastFetchedAt: string | null | undefined,
@@ -74,16 +80,47 @@ export function assessSourceFreshness(
   }
 
   const window = frequencyWindow(scope.updateFrequency);
-  if (ageInDays <= window.freshWithinDays) {
+  const sourceDataAgeInDays = scope.sourceDataDate ? daysSince(scope.sourceDataDate, now) : null;
+  if (scope.sourceDataDate && sourceDataAgeInDays === null) {
     return {
-      status: "fresh",
-      label: "Pobrano zgodnie z rytmem",
-      description: `Ostatnie pobranie: ${agePhrase(ageInDays)}. Status opisuje pobranie źródła, nie sprawność AED.`,
+      status: "attention",
+      label: "Wymaga sprawdzenia daty danych",
+      description: "Nie udało się odczytać daty danych zadeklarowanej przez źródło. Pobranie aplikacji pozostaje zapisane, ale aktualność danych wymaga potwierdzenia.",
       collectedAt: lastFetchedAt,
       ageInDays,
     };
   }
-  if (ageInDays <= window.attentionWithinDays) {
+
+  const dataStatus = sourceDataAgeInDays === null ? null : ageStatus(sourceDataAgeInDays, window);
+  if (dataStatus === "stale") {
+    return {
+      status: "stale",
+      label: "Dane źródłowe wymagają odświeżenia",
+      description: `Dane źródła mają datę sprzed ${agePhrase(sourceDataAgeInDays!)}. Ostatnie pobranie do aplikacji było ${agePhrase(ageInDays)}; świeże pobranie nie odmładza starych danych.`,
+      collectedAt: lastFetchedAt,
+      ageInDays,
+    };
+  }
+  if (dataStatus === "attention") {
+    return {
+      status: "attention",
+      label: "Dane źródłowe zbliżają się do terminu odświeżenia",
+      description: `Dane źródła mają datę sprzed ${agePhrase(sourceDataAgeInDays!)}. Ostatnie pobranie do aplikacji było ${agePhrase(ageInDays)}; potwierdź nową wersję u dysponenta.`,
+      collectedAt: lastFetchedAt,
+      ageInDays,
+    };
+  }
+
+  if (ageStatus(ageInDays, window) === "fresh") {
+    return {
+      status: "fresh",
+      label: "Pobrano zgodnie z rytmem",
+      description: `Ostatnie pobranie: ${agePhrase(ageInDays)}${sourceDataAgeInDays === null ? "" : `; data zasobu: ${agePhrase(sourceDataAgeInDays)}.`} Status nie opisuje sprawności AED.`,
+      collectedAt: lastFetchedAt,
+      ageInDays,
+    };
+  }
+  if (ageStatus(ageInDays, window) === "attention") {
     return {
       status: "attention",
       label: "Zbliża się termin odświeżenia",

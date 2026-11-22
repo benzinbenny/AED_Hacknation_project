@@ -1,0 +1,51 @@
+.moderation-page .button-danger {
+  background: #8c302a;
+  border: 1px solid #8c302a;
+  color: white;
+}
+
+.moderation-page .button-danger:hover {
+  background: #70251f;
+}
+
+.moderation-page .form-grid + .source-list {
+  margin-top: 1rem;
+}
+
+.desk-tiles, .inventory-grid, .moderation-page .pending-list, .moderation-page .source-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+  gap: 14px;
+  max-width: none;
+}
+.desk-tiles { grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr)); }
+.desk-role { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+.desk-tiles button, .inventory-card {
+  display: flex; flex-direction: column; align-items: flex-start; text-align: left;
+  border: 1px solid var(--line); border-radius: 14px; padding: 18px; background: white; color: var(--ink);
+}
+.desk-tiles button { gap: 5px; cursor: pointer; }
+.desk-tiles button[aria-pressed=true] { background: var(--teal); color: white; border-color: var(--teal); }
+.desk-tiles button span { font-size: 25px; font-weight: 700; }
+.desk-tiles button strong, .inventory-card h3 { font-size: 17px; }
+.inventory-card { gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+.inventory-card h3, .inventory-card p { margin: 0; }
+.inventory-card p, .inventory-card small { color: var(--muted); }
+.inventory-card a { color: var(--teal); }
+.inventory-format { font-weight: 700; font-size: 12px; color: var(--teal); }
+.inventory-actions, .inventory-filter { display: flex; flex-wrap: wrap; gap: 8px; }
+.inventory-actions { margin-top: auto; padding-top: 8px; }
+.inventory-filter { margin: 16px 0; }
+.inventory-filter button { padding: 8px 14px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--ink); }
+.inventory-filter button[aria-pressed=true] { background: #dfefe7; border-color: var(--teal); }
+.moderation-page .source-card { grid-template-columns: minmax(0, 1fr); align-content: start; }
+.moderation-page .candidate-actions { flex-wrap: wrap; }
+.moderation-page .button, .inventory-filter button { min-height: 44px; }
+.check-result { margin-top: 12px; padding: 10px; background: #f3f7f4; border-radius: 8px; overflow-wrap: anywhere; }
+.moderation-page :focus-visible { outline: 3px solid #cf841f; outline-offset: 2px; }
+@media(max-width: 600px) {
+  .desk-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .desk-tiles button { padding: 12px; }
+  .desk-tiles button strong { font-size: 15px; }
+  .moderation-page .field-label input, .moderation-page select { font-size: 16px; }
+}

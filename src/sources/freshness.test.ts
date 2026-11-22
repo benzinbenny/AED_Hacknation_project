@@ -27,6 +27,17 @@ describe("assessSourceFreshness", () => {
     expect(result.label).toBe("Wymaga odświeżenia");
   });
 
+  it("does not call a recently fetched daily source fresh when the source data itself is stale", () => {
+    const result = assessSourceFreshness(
+      { ...dailyScope, sourceDataDate: "2026-11-12" },
+      "2026-11-21T08:00:00.000Z",
+      new Date("2026-11-21T12:00:00.000Z"),
+    );
+
+    expect(result.status).toBe("stale");
+    expect(result.label).toBe("Dane źródłowe wymagają odświeżenia");
+  });
+
   it("keeps a one-time publication as a reference rather than claiming it is current", () => {
     const result = assessSourceFreshness({ ...dailyScope, updateFrequency: "Jednorazowe udostępnienie według metadanych" }, null, new Date("2026-11-21T12:00:00.000Z"));
 

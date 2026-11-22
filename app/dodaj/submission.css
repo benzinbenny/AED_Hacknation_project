@@ -1,0 +1,19 @@
+.submission-fields { min-inline-size: 0; margin: 0; border: 0; padding: 0; }
+.report-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.submission-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 20px; background: #f4f7f4; }
+.submission-modes button { display: grid; gap: 5px; padding: 14px; border-radius: 10px; border: 1px solid var(--line); background: white; color: var(--ink); text-align: left; }
+.submission-modes button[aria-pressed=true] { background: #e1f0e7; border: 2px solid var(--teal); padding: 13px; }
+.submission-modes span { font-size: .84rem; }
+.aed-submission h2 { margin: 0 0 14px; font-size: 20px; }
+.aed-submission .field-label, .aed-submission .form-grid, .aed-submission .file-drop { min-width: 0; }
+.aed-submission .file-drop strong { overflow-wrap: anywhere; }
+.aed-submission .file-drop:focus-within, .aed-submission :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+.aed-submission .form-section > a { display: inline-flex; align-items: center; min-height: 44px; color: var(--teal); }
+.aed-submission summary { display: list-item; padding-block: 12px; }
+@media(max-width: 650px) {
+  .submission-modes { padding: 12px; gap: 8px; }
+  .aed-submission .field-label, .aed-submission .form-help, .aed-submission .file-meta, .aed-submission summary { font-size: 14px; }
+  .aed-submission .field-label :is(input, select, textarea) { min-height: 46px; min-width: 0; max-width: 100%; font-size: 16px; }
+  .aed-submission button { min-height: 44px; }
+  .aed-submission .table-scroll { max-width: 100%; }
+}

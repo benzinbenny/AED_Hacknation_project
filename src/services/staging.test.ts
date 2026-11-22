@@ -58,6 +58,44 @@ describe("staging and moderation", () => {
       .toThrow("Source license must be approved");
   });
 
+  it("requires another license review when an existing source changes license or provenance", () => {
+    const staged = stageImport(createEmptyStore(), source, [record], [], "2026-11-21T10:00:00.000Z");
+    const approved = { ...staged.store, sources: staged.store.sources.map((item) => ({ ...item, licenseReviewStatus: "approved" as const })) };
+    const changedRecord = { ...record, id: "33333333-3333-5333-8333-333333333333", sources: [{ ...record.sources[0], sourceRecordId: "row-2", licenseId: "CC-BY-4.0" }] };
+
+    const reimported = stageImport(approved, { ...source, licenseId: "CC-BY-4.0" }, [changedRecord], [], "2026-11-22T10:00:00.000Z");
+
+    expect(reimported.store.sources[0].licenseReviewStatus).toBe("needs_review");
+    expect(() => reviewPendingRecord(reimported.store, changedRecord.id, "approved", "", "2026-11-22T11:00:00.000Z"))
+      .toThrow("Source license must be approved");
+  });
+
+  it("does not unblock a source that a moderator previously blocked", () => {
+    const staged = stageImport(createEmptyStore(), source, [record], [], "2026-11-21T10:00:00.000Z");
+    const blocked = { ...staged.store, sources: staged.store.sources.map((item) => ({ ...item, licenseReviewStatus: "blocked" as const })) };
+
+    const reimported = stageImport(blocked, { ...source, licenseId: "CC-BY-4.0" }, [record], [], "2026-11-22T10:00:00.000Z");
+
+    expect(reimported.store.sources[0].licenseReviewStatus).toBe("blocked");
+  });
+
+  it.each(["2026-11-21T10:30:00Z", "2026-11-21T10:00:00Z"])("requires dependent merges to be undone newest first at %s", (nextTime) => {
+    const records = [record, { ...record, id: "second" }, { ...record, id: "third" }];
+    const first = mergePublicRecords({ ...createEmptyStore(), records }, record.id, "second", "A", "2026-11-21T12:00:00+02:00");
+    const next = mergePublicRecords(first, record.id, "third", "B", nextTime);
+    const undoneAt = "2026-11-21T13:00:00Z";
+    expect(() => undoPublicMerge(next, first.mergeHistory[0].id, undoneAt)).toThrow("Undo later merges first");
+    const latestUndone = undoPublicMerge(next, next.mergeHistory[0].id, undoneAt);
+    expect(undoPublicMerge(latestUndone, first.mergeHistory[0].id, undoneAt).records).toHaveLength(3);
+  });
+
+  it("refuses to restore a missing survivor", () => {
+    const records = [record, { ...record, id: "second" }];
+    const first = mergePublicRecords({ ...createEmptyStore(), records }, record.id, "second", "A", "2026-11-21T10:00:00Z");
+    expect(() => undoPublicMerge({ ...first, records: [] }, first.mergeHistory[0].id, "2026-11-21T11:00:00Z"))
+      .toThrow("późniejszym scaleniu");
+  });
+
   it("merges only on request and can restore both records from history", () => {
     const other = { ...record, id: "22222222-2222-5222-8222-222222222222", sources: [{ ...record.sources[0], sourceRecordId: "row-2" }] };
     const approved = {

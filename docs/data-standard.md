@@ -52,4 +52,10 @@ Standard jest wspólnym kontraktem wymiany dla gmin, służb, placówek ochrony 
 
 Nie należy publikować bez podstawy prawnej informacji kontaktowych osób, prywatnych numerów telefonów, adresów e-mail ani danych zgłaszających. Dane operacyjne osób kontaktowych mogą pozostać w systemie dysponenta.
 
-Szablon XLSX: `/api/standard`. Zawiera zakładki Instrukcja, Dane_AED, Slownik_pol, Slowniki_wartosci, Zrodla i Przyklady_bledow. Zakładka Zrodla zawiera pięć zarejestrowanych profili demonstracyjnych; przed użyciem należy sprawdzić najnowsze metadane u dysponenta. Wzorzec nie oznacza, że aplikacja aktualnie waliduje wszystkie kody TERYT względem rejestru referencyjnego.
+## Szablon i wymiana XLSX
+
+Szablon XLSX v0.2 jest dostępny z aplikacji pod `/api/standard`, a jego niezmienna kopia do przekazania konkursowego znajduje się pod `artifacts/submission/Punkt-Zycia-standard-danych-AED.xlsx`. Zawiera zakładki: `Instrukcja`, `Dane_AED`, `Slownik_pol`, `Slowniki_wartosci`, `Zrodla` i `Przyklady_bledow`.
+
+Aplikacja przyjmuje XLSX wyłącznie wtedy, gdy dane znajdują się w kanonicznej zakładce `Dane_AED`. Wymaga nagłówków i wartości `source_id`, `source_record_id`, `latitude`, `longitude`, `access_type`, `operational_status`, `record_status`, `fetched_at`, `license_id` oraz `synthetic_demo=false`. Jeden przekazany arkusz opisuje jedno źródło. `source_id` z arkusza zostaje zachowany jako zewnętrzny identyfikator dysponenta, a aplikacja przypisuje osobny wewnętrzny identyfikator importu, aby nie można było podszyć się pod zarejestrowane źródło.
+
+Kolumny są mapowane do tego samego modelu i tych samych bramek licencji, pochodzenia oraz moderacji co CSV i GeoJSON. Wartości `source_url`, `license_id` i `attribution` nie mogą po cichu różnić się od metadanych przekazania: sprzeczność zatrzymuje import. Wartości obliczane formułami nie są wykonywane ani traktowane jako zaufane dane wejściowe. Przed otwarciem arkusza aplikacja ogranicza liczbę wpisów ZIP oraz deklarowany rozmiar po rozpakowaniu. Zakładka `Zrodla` zawiera pięć zarejestrowanych profili demonstracyjnych; przed użyciem należy sprawdzić najnowsze metadane u dysponenta. Wzorzec nie oznacza, że aplikacja aktualnie waliduje wszystkie kody TERYT względem rejestru referencyjnego.

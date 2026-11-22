@@ -24,12 +24,19 @@ type WarsawCollection = {
   requiresToken: true;
 };
 
+type OsmCollection = {
+  kind: "osm-overpass";
+  endpoint: string;
+  format: "json";
+  requiresToken: false;
+};
+
 export type AedSourceProfile = SourceDescriptor & {
   publisher: string;
   catalogUrl: string;
   formatLabel: string;
   referenceScope: SourceReferenceScope;
-  collection: PublicEndpointCollection | DaneGovCollection | WarsawCollection;
+  collection: PublicEndpointCollection | DaneGovCollection | WarsawCollection | OsmCollection;
 };
 
 const nationalScope: SourceReferenceScope = {
@@ -43,6 +50,25 @@ const nationalScope: SourceReferenceScope = {
 };
 
 export const AED_SOURCE_CATALOG: AedSourceProfile[] = [
+  {
+    id: "osm-pl",
+    name: "OpenStreetMap — AED w Polsce",
+    url: "https://www.openstreetmap.org/",
+    catalogUrl: "https://wiki.openstreetmap.org/wiki/Tag:emergency%3Ddefibrillator",
+    publisher: "Społeczność OpenStreetMap",
+    upstreamOrigin: "OpenStreetMap",
+    licenseId: "ODbL-1.0",
+    attribution: "© OpenStreetMap contributors; dane na licencji ODbL 1.0",
+    formatLabel: "OSM JSON (Overpass API)",
+    referenceScope: {
+      ...nationalScope,
+      geographyLabel: "Polska według indeksu obiektów OpenAEDMap",
+      temporalDescription: "Stan bazy OSM według czasu repliki Overpass.",
+      updateFrequency: "Według zmian w OSM i replikacji serwera Overpass",
+      limitations: "Identyfikatory pochodzą z polskiego eksportu OpenAEDMap. Położenie i tagi odczytujemy z repliki OSM. Nowy AED pojawi się po aktualizacji indeksu i repliki. Dla obszarów lokalizacja jest przybliżona.",
+    },
+    collection: { kind: "osm-overpass", endpoint: "https://ovp.dresel.systems/api/interpreter", format: "json", requiresToken: false },
+  },
   {
     id: "openaedmap-pl",
     name: "OpenAEDMap — eksport Polski",

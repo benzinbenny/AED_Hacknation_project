@@ -4,6 +4,7 @@ import { AED_SOURCE_CATALOG, getAedSourceProfile } from "./catalog";
 describe("AED source catalogue", () => {
   it("states geographic and temporal reference scope for each known source", () => {
     expect(AED_SOURCE_CATALOG.map((source) => source.id)).toEqual([
+      "osm-pl",
       "openaedmap-pl",
       "dane-gov-krosno",
       "dane-gov-marki",

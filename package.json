@@ -8,6 +8,7 @@
     "node": ">=24 <27"
   },
   "scripts": {
+    "admin:setup": "node scripts/setup-admin.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

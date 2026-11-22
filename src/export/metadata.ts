@@ -1,8 +1,26 @@
+import type { AedRecord } from "../domain/types";
+
 export type PublicationMetadataInput = {
   baseUrl: string;
   sourceCount: number;
   modifiedAt?: string | null;
 };
+
+export function publicationFacts(records: Array<Pick<AedRecord, "sources" | "localCorrection">>): { sourceCount: number; modifiedAt: string | null } {
+  const sourceIds = new Set<string>();
+  let latest = -Infinity;
+  for (const record of records) {
+    if (record.localCorrection) latest = Math.max(latest, Date.parse(record.localCorrection.updatedAt));
+    for (const source of record.sources) {
+      sourceIds.add(source.sourceId);
+      latest = Math.max(latest, Date.parse(source.fetchedAt));
+    }
+  }
+  return {
+    sourceCount: sourceIds.size,
+    modifiedAt: Number.isFinite(latest) ? new Date(latest).toISOString() : null,
+  };
+}
 
 type Distribution = {
   "@type": "dcat:Distribution";

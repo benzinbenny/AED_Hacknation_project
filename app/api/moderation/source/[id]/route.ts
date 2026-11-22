@@ -12,11 +12,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!body.success) return NextResponse.json({ error: "Niepoprawny status licencji." }, { status: 400 });
   const { id } = await params;
   await loadAppStore();
-  let found = false;
-  await repository.update((store) => {
-    found = store.sources.some((source) => source.id === id);
-    return { ...store, sources: store.sources.map((source) => source.id === id ? { ...source, licenseReviewStatus: body.data.status } : source) };
+  const result = await repository.update<"missing" | "deleted" | "updated">((store) => {
+    if (!store.sources.some((source) => source.id === id)) return { store, result: "missing" };
+    if (store.deletedSourceIds?.includes(id)) return { store, result: "deleted" };
+    return { store: { ...store, sources: store.sources.map((source) => source.id === id ? { ...source, licenseReviewStatus: body.data.status } : source) }, result: "updated" };
   });
-  if (!found) return NextResponse.json({ error: "Nie znaleziono źródła." }, { status: 404 });
+  if (result === "missing") return NextResponse.json({ error: "Nie znaleziono źródła." }, { status: 404 });
+  if (result === "deleted") return NextResponse.json({ error: "Źródło zostało usunięte. Przywróć je przed oceną licencji." }, { status: 409 });
   return NextResponse.json({ ok: true, status: body.data.status });
 }

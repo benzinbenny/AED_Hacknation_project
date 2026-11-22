@@ -23,6 +23,7 @@ const SourceSchema = z.object({
   }).optional(),
   licenseReviewStatus: z.enum(["approved", "needs_review", "blocked"]),
   synthetic: z.boolean(),
+  datasetId: z.string().regex(/^\d+$/).optional(),
 });
 const IssueSchema: z.ZodType<ImportIssue> = z.object({
   code: z.enum(["invalid_coordinates", "outside_poland", "missing_source_record_id", "unsupported_geometry", "invalid_feature"]),
@@ -55,6 +56,7 @@ const MergeEventSchema: z.ZodType<MergeHistoryEvent> = z.object({
   survivorBefore: AedRecordSchema,
   mergedSnapshot: AedRecordSchema,
   undoneAt: z.string().datetime({ offset: true }).nullable(),
+  invalidatedAt: z.string().datetime({ offset: true }).optional(),
 });
 const StoreSchema: z.ZodType<AedStore> = z.object({
   schemaVersion: z.literal(1),
@@ -64,6 +66,10 @@ const StoreSchema: z.ZodType<AedStore> = z.object({
   importRuns: z.array(ImportRunSchema),
   decisions: z.array(DecisionSchema),
   mergeHistory: z.array(MergeEventSchema).default([]),
+  deletedRecords: z.record(z.string().uuid(), z.string().datetime({ offset: true })).optional(),
+  uninstalledSourceIds: z.array(z.string().min(1)).optional(),
+  deletedSourceIds: z.array(z.string().min(1)).optional(),
+  forgottenSourceIds: z.array(z.string().min(1)).optional(),
 });
 
 export interface AedRepository {
@@ -100,7 +106,18 @@ export class JsonFileRepository implements AedRepository {
     if (!result.success) {
       throw new Error(`Store file does not match schema v1: ${result.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
     }
-    return result.data;
+    // Retire legacy import blocks while preserving deletion of old merge snapshots.
+    const store = result.data;
+    if (!store.deletedRecords) return store;
+    const deletedRecords = store.deletedRecords;
+    return {
+      ...store,
+      deletedRecords: undefined,
+      mergeHistory: store.mergeHistory.map((event) => {
+        const deletedAt = deletedRecords[event.survivingRecordId] ?? deletedRecords[event.mergedRecordId];
+        return deletedAt && event.status === "merged" ? { ...event, invalidatedAt: event.invalidatedAt ?? deletedAt } : event;
+      }),
+    };
   }
 
   async update<T>(mutate: (current: AedStore) => { store: AedStore; result?: T } | AedStore): Promise<T | AedStore> {
@@ -132,8 +149,17 @@ export class JsonFileRepository implements AedRepository {
     await mkdir(directory, { recursive: true });
     const temporaryPath = path.join(directory, `.${path.basename(this.filePath)}.${randomUUID()}.tmp`);
     try {
-      await writeFile(temporaryPath, `${JSON.stringify(store, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
-      await rename(temporaryPath, this.filePath);
+      await writeFile(temporaryPath, JSON.stringify(store), { encoding: "utf8", flag: "wx" });
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          await rename(temporaryPath, this.filePath);
+          break;
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException).code;
+          if (process.platform !== "win32" || !["EPERM", "EBUSY"].includes(code ?? "") || attempt >= 4) throw error;
+          await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+        }
+      }
     } catch (error) {
       const { unlink } = await import("node:fs/promises");
       await unlink(temporaryPath).catch(() => undefined);

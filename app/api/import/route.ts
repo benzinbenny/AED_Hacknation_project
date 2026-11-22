@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { SourceReferenceScope } from "@/domain/types";
+import type { SourceDescriptor, SourceReferenceScope } from "@/domain/types";
 import { importAedCsv, type CsvFieldMapping } from "@/import/csv";
 import { importAedGeoJson } from "@/import/geojson";
 import { importAedXlsx } from "@/import/xlsx";
-import { stageImport } from "@/services/staging";
+import { SourceUninstalled, stageImport } from "@/services/staging";
 import { loadAppStore, repository } from "@/storage/repository";
 
 export const runtime = "nodejs";
@@ -19,6 +19,7 @@ const MetadataSchema = z.object({
   attribution: z.string().trim().max(300).default(""),
   mapping: z.string().optional(),
   referenceScope: z.string().optional(),
+  submissionMethod: z.enum(["manual", "file"]).default("file"),
 });
 
 export async function POST(request: Request) {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
   const metadata = MetadataSchema.safeParse({
     name: form.get("name"), url: form.get("url"), licenseId: form.get("licenseId") || "unknown",
     attribution: form.get("attribution") || "", mapping: form.get("mapping") || undefined,
-    referenceScope: form.get("referenceScope") || undefined,
+    referenceScope: form.get("referenceScope") || undefined, submissionMethod: form.get("submissionMethod") || undefined,
   });
   if (!metadata.success) return NextResponse.json({ error: "Sprawdź nazwę źródła i poprawny adres URL." }, { status: 400 });
 
@@ -57,13 +58,13 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Zakres referencyjny źródła ma nieprawidłowe pola." }, { status: 400 });
   }
-  const source = {
+  let source: SourceDescriptor = {
     id: sourceId,
     name: metadata.data.name,
     url,
     upstreamOrigin: new URL(url).host,
     licenseId: metadata.data.licenseId || "unknown",
-    attribution: metadata.data.attribution || metadata.data.name,
+    attribution: metadata.data.attribution,
     ...(referenceScope ? { referenceScope } : {}),
   };
   const fetchedAt = new Date().toISOString();
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
       result = importAedGeoJson(json, source, fetchedAt);
     } else if (filename.endsWith(".xlsx")) {
       result = await importAedXlsx(Buffer.from(await file.arrayBuffer()), source, fetchedAt);
+      source = result.source;
     } else {
       return NextResponse.json({ error: "Obsługiwane formaty to CSV, GeoJSON (.geojson lub .json) i wzorcowy XLSX (.xlsx)." }, { status: 415 });
     }
@@ -103,16 +105,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error instanceof SyntaxError ? "Niepoprawny JSON/mapowanie kolumn." : "Plik nie przeszedł walidacji. Sprawdź jego format i nagłówki." }, { status: 400 });
   }
 
+  if (result.records.length === 0) {
+    return NextResponse.json({
+      runId: null, accepted: 0, skippedDeleted: 0, rejected: result.rejected,
+      warningCount: result.issues.filter((issue) => issue.severity === "warning").length,
+      issues: result.issues, moderationRequired: true, licenseReviewStatus: null,
+    }, { status: 201 });
+  }
   await loadAppStore();
   let runId = "";
-  await repository.update((store) => {
-    const staged = stageImport(store, source, result.records, result.issues, fetchedAt);
-    runId = staged.run.id;
-    return staged.store;
-  });
+  let accepted = 0;
+  try {
+    await repository.update((store) => {
+      const records = result.records.map((record) => ({ ...record, submissionMethod: metadata.data.submissionMethod }));
+      const restored = { ...store, forgottenSourceIds: (store.forgottenSourceIds ?? []).filter((id) => id !== source.id) };
+      const staged = stageImport(restored, source, records, result.issues, fetchedAt);
+      runId = staged.run.id;
+      accepted = staged.run.importedCount;
+      return staged.store;
+    });
+  } catch (error) {
+    if (error instanceof SourceUninstalled) return NextResponse.json({ error: error.message }, { status: 409 });
+    throw error;
+  }
   return NextResponse.json({
     runId,
-    accepted: result.records.length,
+    accepted,
+    skippedDeleted: result.records.length - accepted,
     rejected: result.rejected,
     warningCount: result.issues.filter((issue) => issue.severity === "warning").length,
     issues: result.issues,

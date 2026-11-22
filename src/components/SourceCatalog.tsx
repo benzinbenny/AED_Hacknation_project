@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { AED_SOURCE_CATALOG } from "../sources/catalog";
 import { assessSourceFreshness } from "../sources/freshness";
 import type { SourceReferenceScope } from "../domain/types";
@@ -20,12 +23,26 @@ function unknownScope(): SourceReferenceScope {
   };
 }
 
-export function SourceCatalog({ sources, importRuns }: { sources: StoredSource[]; importRuns: ImportRun[] }) {
+export function SourceCatalog({ sources, importRuns, removed, deleted }: { sources: StoredSource[]; importRuns: ImportRun[]; removed: string[]; deleted: string[] }) {
+  const [search, setSearch] = useState("");
+  const [scope, setScope] = useState("all");
   const knownSourceIds = new Set(AED_SOURCE_CATALOG.map((source) => source.id));
-  const contributedSources = sources.filter((source) => !knownSourceIds.has(source.id));
-  const configuredSourceIds = AED_SOURCE_CATALOG.map((source) => source.id);
-  const nationalSources = AED_SOURCE_CATALOG.filter((source) => source.referenceScope.geographyLevel === "country").length;
-  const localSources = AED_SOURCE_CATALOG.length - nationalSources;
+  const contributedSources = sources.filter((source) => !knownSourceIds.has(source.id) && !deleted.includes(source.id));
+  const matches = (name: string, origin: string, geography: string, level: string) => {
+    const query = search.trim().toLocaleLowerCase("pl");
+    const matchesText = !query || [name, origin, geography].some((value) => value.toLocaleLowerCase("pl").includes(query));
+    const matchesScope = scope === "all" || (scope === "country" ? level === "country" : level !== "country");
+    return matchesText && matchesScope;
+  };
+  const visibleProfiles = AED_SOURCE_CATALOG.filter((profile) => {
+    if (deleted.includes(profile.id)) return false;
+    const reference = sources.find((source) => source.id === profile.id)?.referenceScope ?? profile.referenceScope;
+    return matches(profile.name, profile.publisher, reference.geographyLabel, reference.geographyLevel);
+  });
+  const visibleContributed = contributedSources.filter((source) => matches(source.name, source.upstreamOrigin, source.referenceScope?.geographyLabel ?? "", source.referenceScope?.geographyLevel ?? "unknown"));
+  const configuredSourceIds = AED_SOURCE_CATALOG.filter((source) => !deleted.includes(source.id));
+  const nationalSources = configuredSourceIds.filter((source) => source.referenceScope.geographyLevel === "country").length;
+  const localSources = configuredSourceIds.length - nationalSources;
   const latestCollection = importRuns[0]?.fetchedAt;
   return <>
     <section className="source-health-board" aria-labelledby="source-health-title">
@@ -36,14 +53,19 @@ export function SourceCatalog({ sources, importRuns }: { sources: StoredSource[]
       </div>
       <dl className="source-health-summary">
         <div><dt>{configuredSourceIds.length}</dt><dd>skonfigurowanych profili źródeł</dd></div>
-        <div><dt>{nationalSources}</dt><dd>źródło z zakresem krajowym</dd></div>
+        <div><dt>{nationalSources}</dt><dd>profile o zasięgu krajowym</dd></div>
         <div><dt>{localSources}</dt><dd>źródła z zakresem lokalnym</dd></div>
         <div><dt>{contributedSources.length}</dt><dd>źródeł przekazanych przez organizacje</dd></div>
       </dl>
       <p className="source-health-footnote">{latestCollection ? `Ostatnie pobranie do aplikacji: ${localDate(latestCollection)}.` : "Nie uruchomiono jeszcze pobrania konektorów w tej kopii aplikacji."} Status pobrania nie jest oceną stanu technicznego defibrylatora.</p>
     </section>
+    <div className="source-filters">
+      <label className="field-label">Szukaj źródła<input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nazwa, dysponent lub obszar" /></label>
+      <label className="field-label">Zasięg<select value={scope} onChange={(event) => setScope(event.target.value)}><option value="all">Wszystkie źródła</option><option value="country">Krajowe</option><option value="local">Pozostałe</option></select></label>
+      <p role="status">Znaleziono źródeł: {visibleProfiles.length + visibleContributed.length}</p>
+    </div>
     <section className="source-catalog-grid" aria-label="Skonfigurowane źródła danych AED">
-      {AED_SOURCE_CATALOG.map((profile) => {
+      {visibleProfiles.map((profile) => {
         const stored = sources.find((source) => source.id === profile.id);
         const latestRun = importRuns.find((run) => run.sourceId === profile.id);
         const referenceScope = stored?.referenceScope ?? profile.referenceScope;
@@ -53,7 +75,7 @@ export function SourceCatalog({ sources, importRuns }: { sources: StoredSource[]
         return <article className="source-profile-card" key={profile.id}>
           <div className="source-profile-heading">
             <div><p className="eyebrow">{referenceScope.geographyLevel === "country" ? "ZASIĘG KRAJOWY" : "ZASIĘG LOKALNY"}</p><h2>{profile.name}</h2></div>
-            <div className="source-badges"><span className={profile.collection.requiresToken ? "source-availability source-locked" : "source-availability source-ready"}>{profile.collection.requiresToken ? "Wymaga tokenu" : "Konektor dostępny"}</span><span className={`source-freshness source-freshness-${freshness.status}`} title={freshness.description}>{freshness.label}</span></div>
+            <div className="source-badges"><span className={removed.includes(profile.id) || profile.collection.requiresToken ? "source-availability source-locked" : "source-availability source-ready"}>{removed.includes(profile.id) ? "Odinstalowane" : profile.collection.requiresToken ? "Wymaga tokenu" : "Konektor dostępny"}</span><span className={`source-freshness source-freshness-${freshness.status}`} title={freshness.description}>{freshness.label}</span></div>
           </div>
           <p className="source-publisher"><strong>Dysponent:</strong> {profile.publisher}</p>
           <dl className="source-scope-details">
@@ -70,15 +92,16 @@ export function SourceCatalog({ sources, importRuns }: { sources: StoredSource[]
         </article>;
       })}
     </section>
-    {contributedSources.length > 0 && <section className="submitted-sources" aria-label="Źródła przekazane przez organizacje">
-      <div className="section-heading"><div><p className="eyebrow">REJESTR ROZSZERZANY PRZEZ DYSPONENTÓW</p><h2>Źródła przekazane przez organizacje <span className="count-pill">{contributedSources.length}</span></h2><p>Każdy dysponent może dołączyć do wspólnego zbioru plikiem CSV, GeoJSON lub wzorcowym XLSX i opisać zakres swojej publikacji.</p></div></div>
-      <div className="source-catalog-grid">{contributedSources.map((source) => {
+    {visibleContributed.length > 0 && <section className="submitted-sources" aria-label="Źródła przekazane przez organizacje">
+      <div className="section-heading"><div><p className="eyebrow">REJESTR ROZSZERZANY PRZEZ DYSPONENTÓW</p><h2>Źródła przekazane przez organizacje <span className="count-pill">{visibleContributed.length}</span></h2><p>Każdy dysponent może dołączyć do wspólnego zbioru plikiem CSV, GeoJSON lub wzorcowym XLSX i opisać zakres swojej publikacji.</p></div></div>
+      <div className="source-catalog-grid">{visibleContributed.map((source) => {
         const scope = source.referenceScope ?? unknownScope();
         const latestRun = importRuns.find((run) => run.sourceId === source.id);
         const freshness = assessSourceFreshness(scope, latestRun?.fetchedAt);
         return <article className="source-profile-card" key={source.id}>
           <div className="source-profile-heading"><div><p className="eyebrow">{source.synthetic ? "ŹRÓDŁO DEMONSTRACYJNE" : "ZGŁOSZONE PRZEZ DYSPONENTA"}</p><h2>{source.name}</h2></div><span className={`license-status license-${source.licenseReviewStatus}`}>{source.licenseReviewStatus === "approved" ? "Licencja zatwierdzona" : source.licenseReviewStatus === "blocked" ? "Zablokowane" : "Licencja do sprawdzenia"}</span></div>
           <p className="source-publisher"><strong>Pierwotne źródło:</strong> {source.upstreamOrigin}</p>
+          {removed.includes(source.id) && <p>Odinstalowane · przyjmowanie kolejnych plików wstrzymane</p>}
           <dl className="source-scope-details">
             <div><dt>Zakres przestrzenny</dt><dd>{scope?.geographyLabel ?? "Nie podano"} · poziom: {scope?.geographyLevel ?? "unknown"}</dd></div>
             <div><dt>Zakres czasowy / data danych</dt><dd>{scope?.temporalDescription ?? "Nie podano"} · data: {scope?.sourceDataDate ?? "nieznana"}</dd></div>

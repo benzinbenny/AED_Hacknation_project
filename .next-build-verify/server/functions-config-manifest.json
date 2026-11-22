@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/aed": {},
+    "/api/aed/[id]": {},
+    "/api/collect/[sourceId]": {
+      "maxDuration": 150
+    },
+    "/api/export/[format]": {},
+    "/api/import": {
+      "maxDuration": 20
+    },
+    "/api/metadata": {},
+    "/api/moderation": {},
+    "/api/moderation/[id]": {},
+    "/api/moderation/[id]/check": {
+      "maxDuration": 150
+    },
+    "/api/moderation/merge": {},
+    "/api/moderation/merge/[id]/undo": {},
+    "/api/moderation/source/[id]": {},
+    "/api/standard": {}
+  }
+}

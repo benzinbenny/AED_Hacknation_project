@@ -4,17 +4,17 @@ import { normalizeSourcePayload } from "./adapters";
 const fetchedAt = "2026-11-21T12:00:00.000Z";
 
 describe("normalizeSourcePayload", () => {
-  it("maps the Marki CSV exception and preserves an out-of-country coordinate with a warning", () => {
+  it("preserves quoted Marki CSV fields, escaped quotes and embedded newlines after a BOM", () => {
     const csv = [
-      '"Długość geograficzna,Szerokość geograficzna, Nazwa, Lokalizacja, Adres, Numer Id"',
-      '"52.326697, 21.107557,""Defibrylator"",""Urząd Miasta Marki "",""Al.. Piłsudskiego 95, 05-270 Marki"",""1"""',
-      '"21.720344,49.718809,""Defibrylator"",""Szkoła"",""ul. Przykładowa 1, Marki"",""7"""',
-    ].join("\n");
+      '\uFEFF"Długość geograficzna","Szerokość geograficzna","Nazwa","Lokalizacja","Adres","Numer Id"',
+      '"52.326697","21.107557","AED ""A""","Urząd","Piłsudskiego 95,\r\nMarki","1"',
+      '"21.720344","49.718809","Defibrylator","Szkoła","ul. Przykładowa 1, Marki","7"',
+    ].join("\r\n");
 
     const result = normalizeSourcePayload("dane-gov-marki", csv, fetchedAt);
 
     expect(result.records).toHaveLength(2);
-    expect(result.records[0]).toMatchObject({ location: { latitude: 52.326697, longitude: 21.107557 } });
+    expect(result.records[0]).toMatchObject({ name: 'AED "A"', address: "Piłsudskiego 95,\r\nMarki", location: { latitude: 52.326697, longitude: 21.107557 } });
     expect(result.records[1]).toMatchObject({ location: { latitude: 21.720344, longitude: 49.718809 } });
     expect(result.issues).toContainEqual(expect.objectContaining({ code: "outside_poland", severity: "warning", sourceRecordId: "7" }));
   });

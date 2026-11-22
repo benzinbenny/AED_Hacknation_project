@@ -5,8 +5,21 @@ export const OperationalStatusSchema = z.enum(["reported_operational", "reported
 export const AvailabilityStateSchema = z.enum(["open_by_schedule", "closed_by_schedule", "unknown"]);
 export const RecordStatusSchema = z.enum(["active", "temporarily_removed", "removed", "unknown"]);
 
+const EditText = z.string().trim().min(1).max(2000).nullable();
+const CoordinatesSchema = z.strictObject({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+});
+export const RecordChangesSchema = z.strictObject({
+  name: EditText, operatorName: EditText, address: EditText, locationDescription: EditText, accessNotes: EditText,
+  location: CoordinatesSchema, accessType: AccessTypeSchema, operationalStatus: OperationalStatusSchema,
+}).partial();
+export type RecordChanges = z.infer<typeof RecordChangesSchema>;
+export type EditStage = "pending" | "published";
+
 export const SourceReferenceSchema = z.object({
   sourceId: z.string().min(1),
+  upstreamSourceId: z.string().min(1).nullable().optional(),
   sourceRecordId: z.string().min(1),
   fetchedAt: z.string().datetime({ offset: true }),
   sourceDataDate: z.string().date().nullable().optional(),
@@ -20,13 +33,15 @@ export const SourceReferenceSchema = z.object({
 
 export const AedRecordSchema = z.object({
   id: z.string().uuid(),
+  submissionMethod: z.enum(["manual", "file"]).optional(),
   name: z.string().nullable(),
   externalReference: z.string().nullable().optional(),
   operatorName: z.string().nullable(),
-  location: z.object({
-    latitude: z.number().min(-90).max(90),
-    longitude: z.number().min(-180).max(180),
-  }),
+  location: CoordinatesSchema,
+  localCorrection: z.object({
+    updatedAt: z.string().datetime({ offset: true }),
+    changes: RecordChangesSchema,
+  }).optional(),
   coordinateAccuracyMeters: z.number().min(0).nullable().optional(),
   geography: z.object({
     countryCode: z.string().nullable().optional(),

@@ -1,7 +1,9 @@
 import { defineConfig } from "@playwright/test";
 import path from "node:path";
+import { testRunDirectory } from "./e2e/run-directory";
 
-const previewDataRoot = path.resolve(process.cwd(), `.data-e2e-preview-${process.pid}-${Date.now()}`);
+const previewDataRoot = testRunDirectory("preview");
+const screenshotDistDir = process.env.AED_SCREENSHOT_NEXT_DIST_DIR ?? ".next";
 process.env.AED_STORE_PATH = path.join(previewDataRoot, "aed-store.json");
 process.env.AED_E2E_DATA_ROOT = previewDataRoot;
 
@@ -24,9 +26,11 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
+      AED_NEXT_DIST_DIR: screenshotDistDir,
       AED_STORE_PATH: process.env.AED_STORE_PATH,
       AED_MODERATOR_TOKEN: "PRESENTATION-ONLY-LOCAL-TOKEN",
       AED_DEMO_MODERATOR_TOKEN: "PUNKT-ZYCIA-DEMO",
+      AED_ADMIN_TOKEN: "ADMIN-E2E-ONLY",
     },
   },
 });

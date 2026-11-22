@@ -29,3 +29,24 @@ test("source page remains within a narrow mobile viewport", async ({ page }) => 
   const dimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
 });
+
+test("campaign remains within a tablet viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/kampania");
+
+  await expect(page.getByRole("heading", { name: /Masz dane o AED/i })).toBeVisible();
+  const dimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+});
+
+test("administrator panel has no serious automated accessibility violations at mobile width", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/moderacja");
+  await page.getByLabel("Klucz administratora").fill("ADMIN-E2E-ONLY");
+  await page.getByRole("button", { name: "Otwórz kolejkę" }).click();
+  await page.getByRole("button", { name: /Do moderacji/ }).click();
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations.filter((violation) => ["serious", "critical"].includes(violation.impact ?? ""))).toEqual([]);
+  const dimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+});

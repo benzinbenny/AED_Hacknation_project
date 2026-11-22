@@ -17,7 +17,7 @@ test("map view keeps the accessible record list available", async ({ page }) => 
   await page.getByRole("button", { name: /Mapa/ }).click();
   await expect(page.locator(".leaflet-container")).toBeVisible();
   await expect(page.getByRole("heading", { name: "AED demonstracyjny 01" })).toBeVisible();
-  await expect(page.getByText(/Lista punktów jest dostępna bez kafelków mapy/)).toBeVisible();
+  await expect(page.getByText(/Pełna lista punktów jest dostępna bez kafelków mapy/)).toBeVisible();
 });
 
 test("data standard page can download the workbook template", async ({ page }) => {
@@ -39,12 +39,23 @@ test("source directory shows reference coverage, source dates, and connector lim
   const warsaw = page.locator(".source-profile-card").filter({ hasText: "Warszawa" });
   await expect(warsaw.getByText("Wymaga tokenu", { exact: true })).toBeVisible();
   await expect(page.getByText(/nie gwarantuje jej kompletności/)).toBeVisible();
+  await page.getByLabel("Szukaj źródła").fill("Krosno");
+  await expect(page.getByRole("heading", { name: /Defibrylatory zlokalizowane w Mieście Krosno/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "OpenAEDMap — eksport Polski" })).toHaveCount(0);
+  await page.getByLabel("Szukaj źródła").clear();
+  await page.getByRole("combobox", { name: "Zasięg" }).selectOption("country");
+  await expect(page.getByRole("heading", { name: "OpenAEDMap — eksport Polski" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Defibrylatory zlokalizowane w Mieście Krosno/ })).toHaveCount(0);
 });
 
 test("moderation shows near records as review candidates, never auto-merges them", async ({ page }) => {
   await page.goto("/moderacja");
+  await page.getByLabel("Klucz administratora").fill("ADMIN-E2E-ONLY");
+  await page.getByRole("button", { name: "Otwórz kolejkę" }).click();
   await expect(page.getByRole("heading", { name: "Pobierz ze źródła" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Odśwież publiczne źródła" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Pobierz \(wymaga tokenu\)/ })).toBeVisible();
+  await page.getByRole("button", { name: /Historia i scalenia/ }).click();
   await expect(page.getByRole("heading", { name: "Podobne lokalizacje" })).toBeVisible();
   await expect(page.getByText(/13\s*m/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Zachowaj 1., scal 2." })).toBeEnabled();

@@ -88,7 +88,7 @@ export async function createStandardWorkbook(): Promise<Buffer> {
     ["Stan urządzenia", "operational_status jest zgłoszeniem, a nie gwarancją. last_verified_at i verification_method powinny wskazywać ostatnie rzeczywiste potwierdzenie."],
     ["Zakres weryfikacji", "Wskaż, czy i kiedy sprawdzono lokalizację, dostęp, stan techniczny czy pełny zakres. Import nie jest weryfikacją. Termin następnej kontroli służy planowaniu, nie potwierdza sprawności."],
     ["Zakres źródła", "W zakładce Zrodla zakres geograficzny, czasowy, deklarowana częstotliwość i ograniczenia opisują publikację dysponenta; nie dowodzą kompletności ani aktualności każdego AED."],
-    ["Pochodzenie", "Wypełnij source_id, source_record_id, fetched_at i license_id. Zachowaj źródłowy identyfikator i wymagane oznaczenie."],
+    ["Pochodzenie", "Wypełnij source_id, source_record_id, fetched_at i license_id. Jeden przekazany arkusz opisuje jedno źródło; sprzeczne URL, licencja lub atrybucja zatrzymają import. Zachowaj źródłowy identyfikator i wymagane oznaczenie."],
     ["Licencja", "Nie publikuj danych z licencją unknown. Sprawdź prawa do ponownego wykorzystania i wymagania atrybucji u dysponenta."],
     ["Duplikaty", "Podobne współrzędne są kandydatami do ręcznej analizy. Nie scalaj automatycznie; dwa urządzenia mogą znajdować się w tym samym budynku."],
     ["Dane przykładowe", "Zakładka Przyklady_bledow zawiera fikcyjne przykłady. Są wyłącznie dydaktyczne i nie wolno traktować ich jako rzeczywistych lokalizacji."],

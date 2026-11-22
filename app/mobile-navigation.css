@@ -1,0 +1,10 @@
+.site-header .mobile-nav { display: none; }
+@media(max-width: 650px) {
+  .site-header .desktop-nav { display: none; }
+  .site-header .header-inner { display: flex; min-height: 62px; position: relative; }
+  .site-header .mobile-nav { display: block; }
+  .mobile-nav summary { cursor: pointer; border-radius: 8px; border: 1px solid var(--line); padding: 10px 16px; min-height: 44px; font-weight: 700; color: var(--teal); }
+  .site-header .mobile-nav nav { position: absolute; inset: 100% 8px auto; width: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--paper); padding: 10px; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+  .site-header .mobile-nav:not([open]) nav { display: none; }
+  .site-header .mobile-nav nav a { display: flex; align-items: center; min-height: 44px; font-size: 14px; padding: 8px 12px; margin: 0; }
+}

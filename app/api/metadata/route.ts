@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { createPublicationMetadata } from "@/export/metadata";
-import { AED_SOURCE_CATALOG } from "@/sources/catalog";
+import { createPublicationMetadata, publicationFacts } from "@/export/metadata";
+import { exportableRecords } from "@/services/licensing";
 import { loadAppStore } from "@/storage/repository";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   const store = await loadAppStore();
-  const knownIds = new Set(AED_SOURCE_CATALOG.map((source) => source.id));
-  const contributedCount = store.sources.filter((source) => !knownIds.has(source.id)).length;
+  const facts = publicationFacts(exportableRecords(store));
   const metadata = createPublicationMetadata({
     baseUrl: new URL(request.url).origin,
-    sourceCount: AED_SOURCE_CATALOG.length + contributedCount,
-    modifiedAt: store.importRuns[0]?.fetchedAt ?? null,
+    sourceCount: facts.sourceCount,
+    modifiedAt: facts.modifiedAt,
   });
 
   return new NextResponse(JSON.stringify(metadata, null, 2), {

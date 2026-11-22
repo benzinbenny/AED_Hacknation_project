@@ -14,9 +14,9 @@ if (process.env.NODE_ENV !== "production") globalForRepository.__aedRepository =
 
 export async function loadAppStore(): Promise<AedStore> {
   const existing = await repository.load();
-  if (existing.sources.length > 0 || existing.records.length > 0 || existing.pendingRecords.length > 0) return existing;
+  if (existing.sources.length > 0 || existing.records.length > 0 || existing.pendingRecords.length > 0 || existing.deletedSourceIds?.length || existing.forgottenSourceIds?.length) return existing;
   const result = await repository.update((current) => {
-    const isStillEmpty = current.sources.length === 0 && current.records.length === 0 && current.pendingRecords.length === 0;
+    const isStillEmpty = current.sources.length === 0 && current.records.length === 0 && current.pendingRecords.length === 0 && !current.deletedSourceIds?.length && !current.forgottenSourceIds?.length;
     return isStillEmpty ? createDemoStore() : current;
   });
   return result as AedStore;

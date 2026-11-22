@@ -1,0 +1,3 @@
+{
+  "/api/moderation/sources/[sourceId]/installation/route": "app/api/moderation/sources/[sourceId]/installation/route.js"
+}

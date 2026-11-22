@@ -1,13 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
 
-export function configuredModeratorToken(): string | null {
-  if (process.env.AED_MODERATOR_TOKEN) return process.env.AED_MODERATOR_TOKEN;
-  if (process.env.NODE_ENV !== "production") return process.env.AED_DEMO_MODERATOR_TOKEN ?? "PUNKT-ZYCIA-DEMO";
-  return null;
+export function isModeratorRequest(request: Request): boolean {
+  return isAdminRequest(request);
 }
 
-export function isModeratorRequest(request: Request): boolean {
-  const expected = configuredModeratorToken();
+export function isAdminRequest(request: Request): boolean {
+  const adminToken = process.env.AED_ADMIN_TOKEN;
+  return Boolean(adminToken && tokenMatches(request, adminToken));
+}
+
+function tokenMatches(request: Request, expected?: string | null): boolean {
   const provided = request.headers.get("x-moderator-token") ?? "";
   if (!expected || !provided) return false;
   const expectedBytes = Buffer.from(expected);
@@ -16,5 +18,5 @@ export function isModeratorRequest(request: Request): boolean {
 }
 
 export function demoModeratorTokenForUi(): string | null {
-  return process.env.NODE_ENV === "production" ? null : configuredModeratorToken();
+  return null;
 }

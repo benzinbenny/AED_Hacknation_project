@@ -4,12 +4,13 @@
 
 Zakres referencyjny wskazuje, co według publikacji dysponenta obejmuje źródło. Data pobrania przez aplikację, data zasobu źródłowego i data faktycznej kontroli AED to trzy odrębne rzeczy. Częstotliwość zadeklarowana w metadanych nie dowodzi, że konkretne urządzenie istnieje, jest dostępne ani sprawne.
 
-Pięć profili poniżej to początkowy zestaw integracji i kandydatów z badanego katalogu, a nie pełny wykaz wszystkich dysponentów w Polsce. Pozostałe organizacje mogą przekazać CSV/GeoJSON, opisać zakres referencyjny i wejść do tego samego modelu po moderacji. Aktualną metadaną trzeba sprawdzić ponownie przed operacyjnym wykorzystaniem.
+Tabela obejmuje sześć skonfigurowanych profili. Pozostałe organizacje mogą przekazać plik i podać zakres swojej publikacji.
 
 ## Profile skonfigurowane (stan rozpoznania: 21 listopada 2026 r.)
 
 | Publikacja | Zakres referencyjny i data danych | Deklarowana częstotliwość | Format, identyfikator, licencja | Ograniczenia i konektor |
 |---|---|---|---|---|
+| [OpenStreetMap](https://www.openstreetmap.org/) | Polska według indeksu identyfikatorów OpenAEDMap. Datę danych określa znacznik czasu repliki. | Według replikacji i aktualizacji indeksu | Overpass JSON, ODbL 1.0, © OpenStreetMap contributors | Tagi i pozycje pochodzą z Overpass. Import obejmuje istniejące obiekty z tagiem `emergency=defibrillator`. Dla dróg i relacji importowany jest środek prostokąta obejmującego obiekt. |
 | [OpenAEDMap — Polska](https://openaedmap.org/pl/) | Polska; eksport obejmuje dane OSM w chwili pobrania, bez okresu weryfikacji urządzenia. W badanym eksporcie GeoJSON było 18 297 obiektów. | Brak harmonogramu w endpointcie eksportowym | GeoJSON; endpoint `https://openaedmap.org/api/v1/countries/PL.geojson`; ODbL 1.0 | Opiera się na edycjach społeczności OSM; zasięg nie gwarantuje kompletności ani stanu technicznego. Konektor krajowy. Wymagane oznaczenie © OpenStreetMap contributors; warunki bazy pochodnej należy sprawdzić prawnie. [Prawa OSM](https://www.openstreetmap.org/copyright), [tag AED](https://wiki.openstreetmap.org/wiki/Tag:emergency%3Ddefibrillator). |
 | [Krosno — defibrylatory](https://dane.gov.pl/pl/dataset/3624) | Miasto Krosno; data danych zasobu 2024-02-19 | „Nie dotyczy” w metadanych | CSV; zbiór 3624, zasób 54632; CC0 1.0 | Jednorazowo opublikowany plik; nie potwierdza aktualnego położenia ani sprawności. Konektor pobiera określony zasób z API Dane.gov.pl. |
 | [Marki — defibrylatory](https://dane.gov.pl/pl/dataset/4955) | Miasto Marki; data danych 2025-07-10 | Jednorazowo według metadanych | CSV; zbiór 4955, zasób 68353; CC BY 4.0 | Plik ma każdy wiersz zawinięty w cudzysłów. Nazwy kolumn współrzędnych są zamienione względem wartości w większości wierszy; jeden z 8 rekordów wskazuje poza Polskę. Konektor używa jawnej, specyficznej mapy, zachowuje wartości i zgłasza ostrzeżenie zamiast je poprawiać. |

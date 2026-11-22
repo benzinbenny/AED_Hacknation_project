@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPublicationMetadata } from "./metadata";
+import { createPublicationMetadata, publicationFacts } from "./metadata";
 
 describe("createPublicationMetadata", () => {
   it("describes the AED package through JSON-LD distributions and transparent provenance", () => {
@@ -19,5 +19,16 @@ describe("createPublicationMetadata", () => {
       expect.objectContaining({ "dct:format": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
     ]));
     expect(metadata["dct:description"]).toContain("nie gwarantuje kompletności");
+  });
+});
+
+describe("publicationFacts", () => {
+  it("counts only source references in the public records and uses their latest provenance timestamp", () => {
+    const facts = publicationFacts([
+      { sources: [{ sourceId: "source-a", sourceRecordId: "one", fetchedAt: "2026-11-20T10:00:00.000Z" }] },
+      { sources: [{ sourceId: "source-a", sourceRecordId: "two", fetchedAt: "2026-11-21T10:00:00.000Z" }, { sourceId: "source-b", sourceRecordId: "three", fetchedAt: "2026-11-19T10:00:00.000Z" }] },
+    ]);
+
+    expect(facts).toEqual({ sourceCount: 2, modifiedAt: "2026-11-21T10:00:00.000Z" });
   });
 });

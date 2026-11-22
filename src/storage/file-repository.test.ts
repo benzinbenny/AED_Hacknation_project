@@ -4,6 +4,8 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createEmptyStore } from "../services/staging";
 import { JsonFileRepository } from "./file-repository";
+import { createDemoStore } from "../data/demo";
+import { mergePublicRecords, stageImport, undoPublicMerge } from "../services/staging";
 
 let directory: string;
 
@@ -16,6 +18,23 @@ afterEach(async () => {
 });
 
 describe("JsonFileRepository", () => {
+  it("retires saved legacy deletion blocks and keeps old merge snapshots invalidated", async () => {
+    const store = createDemoStore();
+    const [a, b] = store.records;
+    const time = "2026-11-21T12:00:00Z";
+    const merged = mergePublicRecords(store, a.id, b.id, "Duplikat", time);
+    const repository = new JsonFileRepository(path.join(directory, "legacy.json"), createEmptyStore);
+    await repository.replace({ ...merged, records: [], deletedRecords: { [a.id]: time, [b.id]: time } });
+    const loaded = await repository.load();
+    expect(loaded.deletedRecords).toBeUndefined();
+    const imported = stageImport(loaded, store.sources[0], [a, b], [], time);
+    expect(imported.run.importedCount).toBe(2);
+    expect(imported.store.pendingRecords).toHaveLength(2);
+    expect(imported.store.mergeHistory[0].invalidatedAt).toBe(time);
+    expect(() => undoPublicMerge(imported.store, merged.mergeHistory[0].id, time)).toThrow("usunął");
+    await repository.replace(imported.store);
+    expect((await repository.load()).pendingRecords).toHaveLength(2);
+  });
   it("starts from a valid empty store when there is no saved file", async () => {
     const repository = new JsonFileRepository(path.join(directory, "store.json"), createEmptyStore);
 

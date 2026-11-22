@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import "./source-catalog.css";
+import "./mobile-navigation.css";
 
 export const metadata: Metadata = {
   title: { default: "Punkt Życia — dane AED", template: "%s | Punkt Życia" },

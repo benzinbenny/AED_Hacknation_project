@@ -107,7 +107,11 @@ function enumValue<T extends string>(value: string | null, allowed: readonly T[]
   return allowed.includes(value as T) ? value as T : allowed[allowed.length - 1];
 }
 
-export function importAedGeoJson(input: unknown, source: SourceDescriptor, fetchedAt: string): ImportResult {
+export type GeoJsonImportOptions = {
+  preserveRowProvenance?: boolean;
+};
+
+export function importAedGeoJson(input: unknown, source: SourceDescriptor, fetchedAt: string, options: GeoJsonImportOptions = {}): ImportResult {
   const records: AedRecord[] = [];
   const issues: ImportIssue[] = [];
   let rejected = 0;
@@ -208,14 +212,15 @@ export function importAedGeoJson(input: unknown, source: SourceDescriptor, fetch
       recordStatus: mapRecordStatus(asText(properties.record_status)),
       sources: [{
         sourceId: source.id,
+        upstreamSourceId: options.preserveRowProvenance ? asText(properties.source_id) : null,
         sourceRecordId,
-        fetchedAt,
+        fetchedAt: options.preserveRowProvenance ? asText(properties.fetched_at) ?? fetchedAt : fetchedAt,
         sourceDataDate: source.referenceScope?.sourceDataDate ?? null,
         sourceUpdatedAt: asText(properties.source_updated_at),
-        sourceUrl: source.url,
-        upstreamOrigin: source.upstreamOrigin,
-        licenseId: source.licenseId,
-        attribution: source.attribution,
+        sourceUrl: options.preserveRowProvenance ? asText(properties.source_url) ?? source.url : source.url,
+        upstreamOrigin: options.preserveRowProvenance ? asText(properties.upstream_origin) ?? source.upstreamOrigin : source.upstreamOrigin,
+        licenseId: options.preserveRowProvenance ? asText(properties.license_id) ?? source.licenseId : source.licenseId,
+        attribution: options.preserveRowProvenance ? asText(properties.attribution) ?? source.attribution : source.attribution,
         rawRecordHash: rawHash(item),
       }],
     };

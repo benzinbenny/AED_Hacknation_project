@@ -1,4 +1,4 @@
-import type { ImportResult } from "../domain/types";
+import type { ImportResult, SourceDescriptor } from "../domain/types";
 import { importAedCsv } from "../import/csv";
 import { importAedGeoJson } from "../import/geojson";
 import { getAedSourceProfile, sourceDescriptor } from "./catalog";
@@ -9,11 +9,8 @@ const emptyResult = (message: string): ImportResult => ({
   issues: [{ code: "invalid_feature", severity: "error", message, sourceRecordId: null }],
 });
 
-function unwrapQuotedRows(csv: string): string {
-  return csv.replace(/^\uFEFF/, "").split(/\r?\n/).map((line) => {
-    if (line.length < 2 || line[0] !== '"' || line[line.length - 1] !== '"') return line;
-    return line.slice(1, -1).replace(/""/g, '"');
-  }).join("\n");
+function normalizeCsvInput(csv: string): string {
+  return csv.replace(/^\uFEFF/, "");
 }
 
 function objectRecord(value: unknown): Record<string, unknown> | null {
@@ -63,15 +60,43 @@ function normalizeWarsawPayload(input: unknown): unknown {
   };
 }
 
-export function normalizeSourcePayload(sourceId: string, payload: unknown, fetchedAt: string): ImportResult {
+export function normalizeSourcePayload(sourceId: string, payload: unknown, fetchedAt: string, resolvedSource?: SourceDescriptor): ImportResult {
   const profile = getAedSourceProfile(sourceId);
   if (!profile) return emptyResult("Nieznany, niezarejestrowany profil źródła AED.");
-  const source = sourceDescriptor(profile);
+  const source = resolvedSource ?? sourceDescriptor(profile);
+  if (profile.collection.kind === "osm-overpass") {
+    const elements = objectRecord(payload)?.elements;
+    if (!Array.isArray(elements)) return emptyResult("Brak listy obiektów OSM.");
+    const features = elements.filter((value) => objectRecord(objectRecord(value)?.tags)?.emergency === "defibrillator").map((value) => {
+      const item = objectRecord(value);
+      const tags = objectRecord(item?.tags);
+      if (!item || tags?.emergency !== "defibrillator" || !["node", "way", "relation"].includes(String(item.type))) return null;
+      const point = item.type === "node" ? item : objectRecord(item.center);
+      return {
+        type: "Feature",
+        id: Number.isSafeInteger(item.id) && Number(item.id) > 0 ? `${item.type}/${item.id}` : null,
+        geometry: { type: "Point", coordinates: [point?.lon, point?.lat] },
+        properties: {
+          name: tags.name, operator: tags.operator, access: tags.access, opening_hours: tags.opening_hours,
+          indoor: tags.indoor, level: tags.level, ref: tags.ref,
+          location_description: tags["defibrillator:location:pl"] ?? tags["defibrillator:location"] ?? tags.description,
+          "addr:full": tags["addr:full"], "addr:street": tags["addr:street"], "addr:housenumber": tags["addr:housenumber"],
+          "addr:city": tags["addr:city"], "addr:postcode": tags["addr:postcode"],
+        },
+      };
+    });
+    const result = importAedGeoJson({ type: "FeatureCollection", features }, source, fetchedAt);
+    for (const record of result.records) {
+      const reference = record.sources[0];
+      reference.sourceUrl = `https://www.openstreetmap.org/${reference.sourceRecordId}`;
+    }
+    return result;
+  }
   const normalizedPayload = profile.collection.kind === "warsaw-api" ? normalizeWarsawPayload(payload) : payload;
 
   if (profile.collection.format === "csv") {
     if (typeof normalizedPayload !== "string") return emptyResult("Źródło miało zwrócić plik CSV, ale odpowiedź nie jest tekstem.");
-    const csvText = sourceId === "dane-gov-marki" ? unwrapQuotedRows(normalizedPayload) : normalizedPayload;
+    const csvText = normalizeCsvInput(normalizedPayload);
     return importAedCsv(csvText, source, profile.collection.mapping!, fetchedAt);
   }
 
