@@ -80,6 +80,7 @@ Mapa pobiera kafelki OpenStreetMap i wymaga sieci; lista, import i pozostałe wi
 - [Macierz wymagań](docs/requirements-matrix.md)
 - [Bezpieczeństwo i dostępność](docs/security-accessibility.md)
 - [Scenariusz demonstracji](docs/demo-script.md)
+- [Opis techniczny](docs/opis-techniczny-aplikacji.md)
 - [Rejestr źródeł i założeń](docs/source-register.md)
 - [Raport weryfikacji](docs/verification.md)
 - [Lista przekazania konkursowego](docs/submission-checklist.md)
